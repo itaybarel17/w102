@@ -99,30 +99,22 @@
           }
         });
 
-        // opacity logic for pag/cart
-        const dataFromSupabase = [
-          { location_id: "1B", item_group: 400, expiry_date: "2024-01-01" },
-          { location_id: "2C", item_group: 100, expiry_date: "2026-01-01" },
-          { location_id: "3A", item_group: 200, expiry_date: "2023-05-10" }
-        ];
+        // Handle incoming messages from parent
+        window.addEventListener("message", (event) => {
+          if (event.data?.type === "update-pag-opacity") {
+            const { locationId, opacity } = event.data;
+            const textElement = Array.from(svg.querySelectorAll("text"))
+              .find(t => t.textContent.trim() === locationId);
 
-        const today = new Date().toISOString().split("T")[0];
+            const group = textElement?.closest("g");
+            const pag = group?.querySelector('[id="pag"]');
 
-        svg.querySelectorAll('[id="pag"]').forEach(pag => {
-          pag.setAttribute("opacity", "0.3");
-        });
-
-        dataFromSupabase.forEach(({ location_id, item_group, expiry_date }) => {
-          const isExpired = item_group === 400 || (expiry_date && expiry_date < today);
-          const textElement = Array.from(svg.querySelectorAll("text"))
-            .find(t => t.textContent.trim() === location_id);
-
-          const parentGroup = textElement?.closest("g");
-          if (parentGroup) {
-            const pag = parentGroup.querySelector('[id="pag"]');
-            const cart = parentGroup.querySelector('[id="cart"]');
-            if (pag && isExpired) pag.setAttribute("opacity", "1");
-            if (cart && !isExpired) cart.setAttribute("opacity", "0");
+            if (pag) {
+              pag.setAttribute("opacity", opacity);
+              console.log(`Updated PAG opacity for ${locationId} to ${opacity}`);
+            } else {
+              console.log(`Could not find PAG for location ${locationId}`);
+            }
           }
         });
 
