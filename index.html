@@ -99,22 +99,45 @@
           }
         });
 
-        // Handle incoming messages from parent
         window.addEventListener("message", (event) => {
-          if (event.data?.type === "update-pag-opacity") {
-            const { locationId, opacity } = event.data;
+          const { type, locationId, opacity, text } = event.data || {};
+
+          if (type === "update-pag-opacity") {
             const textElement = Array.from(svg.querySelectorAll("text"))
               .find(t => t.textContent.trim() === locationId);
-
             const group = textElement?.closest("g");
             const pag = group?.querySelector('[id="pag"]');
-
             if (pag) {
               pag.setAttribute("opacity", opacity);
               console.log(`Updated PAG opacity for ${locationId} to ${opacity}`);
-            } else {
-              console.log(`Could not find PAG for location ${locationId}`);
             }
+          }
+
+          if (type === "update-cart-opacity") {
+            const textElement = Array.from(svg.querySelectorAll("text"))
+              .find(t => t.textContent.trim() === locationId);
+            const group = textElement?.closest("g");
+            const cart = group?.querySelector('[id="cart"]');
+            if (cart) {
+              cart.setAttribute("opacity", opacity);
+              console.log(`Updated CART opacity for ${locationId} to ${opacity}`);
+            }
+          }
+
+          if (type === "update-all-pag-opacity") {
+            const matchingGroups = Array.from(svg.querySelectorAll("g")).filter(group => {
+              return Array.from(group.querySelectorAll("text")).some(t =>
+                t.textContent.trim().toLowerCase().includes(text.toLowerCase())
+              );
+            });
+
+            matchingGroups.forEach(group => {
+              const pag = group.querySelector('[id="pag"]');
+              if (pag) {
+                pag.setAttribute("opacity", opacity);
+                console.log(`Set pag opacity for group ${group.id || '[no id]'} to ${opacity}`);
+              }
+            });
           }
         });
 
