@@ -48,15 +48,14 @@
       .then(svgContent => {
         wrapper.innerHTML = svgContent;
         const svg = wrapper.querySelector('svg');
-        const warehouse = svg.getElementById('warehouse1');
 
-        if (!warehouse) {
-          console.error('warehouse1 not found in SVG');
+        if (!svg) {
+          console.error('SVG not loaded');
           return;
         }
 
         const applyTransform = () => {
-          warehouse.setAttribute('transform', `translate(${translateX}, ${translateY}) scale(${scale})`);
+          svg.setAttribute('style', `transform: translate(${translateX}px, ${translateY}px) scale(${scale}); transform-origin: 0 0;`);
         };
 
         container.addEventListener('wheel', (e) => {
@@ -69,7 +68,6 @@
           const delta = e.deltaY > 0 ? -0.1 : 0.1;
           scale = Math.min(Math.max(scale + delta, 0.3), 4);
 
-          // Adjust translate to zoom into the pointer
           translateX -= (offsetX / prevScale - offsetX / scale);
           translateY -= (offsetY / prevScale - offsetY / scale);
 
