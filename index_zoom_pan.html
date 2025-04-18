@@ -1,0 +1,135 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Warehouse Map</title>
+  <style>
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+    }
+    #container {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      cursor: grab;
+      position: relative;
+    }
+    #svg-wrapper {
+      width: 100%;
+      height: 100%;
+    }
+    svg {
+      width: 100%;
+      height: auto;
+      transform-origin: 0 0;
+    }
+  </style>
+</head>
+<body>
+  <div id="container">
+    <div id="svg-wrapper"></div>
+  </div>
+
+  <script>
+    let scale = 1;
+    let translateX = 0;
+    let translateY = 0;
+    let isDragging = false;
+    let dragStartX, dragStartY;
+
+    const wrapper = document.getElementById('svg-wrapper');
+    const container = document.getElementById('container');
+
+    fetch('warehouse102_modified.svg')
+      .then(res => res.text())
+      .then(svgContent => {
+        wrapper.innerHTML = svgContent;
+        const svg = wrapper.querySelector('svg');
+        const warehouse = svg.getElementById('warehouse1');
+
+        if (!warehouse) {
+          console.error('warehouse1 not found in SVG');
+          return;
+        }
+
+        const applyTransform = () => {
+          warehouse.setAttribute('transform', `translate(${translateX}, ${translateY}) scale(${scale})`);
+        };
+
+        container.addEventListener('wheel', (e) => {
+          e.preventDefault();
+          const rect = container.getBoundingClientRect();
+          const offsetX = e.clientX - rect.left;
+          const offsetY = e.clientY - rect.top;
+          const prevScale = scale;
+
+          const delta = e.deltaY > 0 ? -0.1 : 0.1;
+          scale = Math.min(Math.max(scale + delta, 0.3), 4);
+
+          // Adjust translate to zoom into the pointer
+          translateX -= (offsetX / prevScale - offsetX / scale);
+          translateY -= (offsetY / prevScale - offsetY / scale);
+
+          applyTransform();
+        });
+
+        container.addEventListener('mousedown', (e) => {
+          isDragging = true;
+          dragStartX = e.clientX - translateX;
+          dragStartY = e.clientY - translateY;
+          container.style.cursor = 'grabbing';
+        });
+
+        container.addEventListener('mouseup', () => {
+          isDragging = false;
+          container.style.cursor = 'grab';
+        });
+
+        container.addEventListener('mouseleave', () => {
+          isDragging = false;
+          container.style.cursor = 'grab';
+        });
+
+        container.addEventListener('mousemove', (e) => {
+          if (isDragging) {
+            translateX = e.clientX - dragStartX;
+            translateY = e.clientY - dragStartY;
+            applyTransform();
+          }
+        });
+
+        // opacity logic for pag/cart
+        const dataFromSupabase = [
+          { location_id: "1B", item_group: 400, expiry_date: "2024-01-01" },
+          { location_id: "2C", item_group: 100, expiry_date: "2026-01-01" },
+          { location_id: "3A", item_group: 200, expiry_date: "2023-05-10" }
+        ];
+
+        const today = new Date().toISOString().split("T")[0];
+
+        svg.querySelectorAll('[id="pag"]').forEach(pag => {
+          pag.setAttribute("opacity", "0.3");
+        });
+
+        dataFromSupabase.forEach(({ location_id, item_group, expiry_date }) => {
+          const isExpired = item_group === 400 || (expiry_date && expiry_date < today);
+          const textElement = Array.from(svg.querySelectorAll("text"))
+            .find(t => t.textContent.trim() === location_id);
+
+          const parentGroup = textElement?.closest("g");
+          if (parentGroup) {
+            const pag = parentGroup.querySelector('[id="pag"]');
+            const cart = parentGroup.querySelector('[id="cart"]');
+            if (pag && isExpired) pag.setAttribute("opacity", "1");
+            if (cart && !isExpired) cart.setAttribute("opacity", "0");
+          }
+        });
+
+        applyTransform();
+      });
+  </script>
+</body>
+</html>
